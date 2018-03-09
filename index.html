@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Vue-sample-pagination</title>
+	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+</head>
+<body>
+	<br>
+	<div id="pagiApp" class="container">
+		<h2>Sample Pagination</h2>
+		<hr>
+		<div class="float-right row">
+      <div class="col-lg-8 pull-right">
+  			<ul class="pagination pagination">
+  			  <li class="page-item"><a class="page-link" href="#" @click="getlist(curpage-1)">Previous</a></li>
+  			  <li class="page-item" v-bind:class="{active:curpage==num}" v-for="num in pagi_numbers">
+  			  		<a class="page-link" href="#" @click="getlist(num)">{{num}}</a>
+  			  </li>
+  			  <li class="page-item"><a class="page-link" href="#" @click="getlist(curpage+1)">Next</a></li>
+  			</ul>
+      </div>
+      <div class="col-lg-2">
+        <input class="form-control" v-model="page" type="text">
+      </div>
+      <div class="col-lg-2">
+        <button class="btn btn-primary" @click="getlist(page)">Go</button>
+      </div>
+		</div>
+		<table class="table">
+			<thead>
+				<tr>
+					<th>IDX</th>
+					<th>Page</th>
+					<th>Status</th>
+					<th>Time</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr v-for="item in items">
+					<td>{{item.idx}}</td>
+					<td>{{item.page}}</td>
+					<td>{{item.status}}</td>
+					<td>{{item.time}}</td>
+				</tr>
+			</tbody>
+		</table>
+		<hr>
+    <div class="float-left row">
+      <div class="col-lg-8 pull-right">
+        <ul class="pagination pagination">
+          <li class="page-item"><a class="page-link" href="#" @click="getlist(curpage-1)">Previous</a></li>
+          <li class="page-item" v-bind:class="{active:curpage==num}" v-for="num in pagi_numbers">
+              <a class="page-link" href="#" @click="getlist(num)">{{num}}</a>
+          </li>
+          <li class="page-item"><a class="page-link" href="#" @click="getlist(curpage+1)">Next</a></li>
+        </ul>
+      </div>
+      <div class="col-lg-2">
+        <input class="form-control" v-model="page" type="text">
+      </div>
+      <div class="col-lg-2">
+        <button class="btn btn-primary" @click="getlist(page)">Go</button>
+      </div>
+    </div>
+	</div>
+</body>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.5.13/dist/vue.js"></script>
+</html>
+<script type="text/javascript">
+	
+var app = new Vue({
+  el:'#pagiApp',
+  data:{
+    id:0,
+    items:[],
+    count:0,
+    curpage:1,
+    pagesize:10,
+    log:{},
+    showMsg:false,
+    msg:"asdfasdf",
+    numbers:[],
+    page:1,
+    modalTitle:"Adding Post",
+    show_front_dots:false,
+    show_back_dots:false,
+    pagi_numbers:[]
+  },
+   
+  methods:{
+    init:function(){
+      let vm =this;
+      var temparr = [];
+      this.postdata("http://localhost/wunzinnDigests/Mylog//getdata",null,function(result){
+        var d = $.parseJSON(result);
+        // console.log(d);return;
+        if(d.success){
+            vm.$set(vm,"count",d.count);
+            for(var i = 0;d.count > i*vm.pagesize;i++){
+
+              temparr.push(i+1);
+            }
+            vm.$set(vm,'numbers',temparr);
+            vm.setup_pagi(vm.curpage,temparr);
+        }
+      });    
+    },
+    setup_pagi:function(curpage,numbers){
+      curpage = parseInt(curpage);
+    	var pagi_numbers = [];
+    	var length = numbers.length;
+    	if(numbers.length>6){
+    		if(curpage < 6){
+    			pagi_numbers.push(1);
+    			for (var i = 2; i < 6; i++) {
+    				pagi_numbers.push(i);
+    			};
+    			if(curpage == 5){
+    				pagi_numbers.push(6);
+    				pagi_numbers.push(7);	
+    			}
+    			
+    			pagi_numbers.push("...");
+    			pagi_numbers.push(numbers[length-1]);
+
+    		}else if(curpage >(length-5)){
+          console.log(length);
+          console.log(curpage);
+
+				  pagi_numbers.push(1);
+				  pagi_numbers.push("...");
+				
+				if(curpage == (length-4)){
+					pagi_numbers.push(length-6);
+					pagi_numbers.push(length-5);	
+				}
+				
+    			for (var i = 4; i > 0; i--) {
+    				pagi_numbers.push(length-i);
+    			};
+
+    			pagi_numbers.push(numbers[length-1]);   
+
+    		}else{
+    			
+          pagi_numbers.push(1);
+				  pagi_numbers.push("...");
+				  pagi_numbers.push(curpage-2);
+				  pagi_numbers.push(curpage-1);
+				  pagi_numbers.push(curpage);
+				  pagi_numbers.push(curpage+1);
+				  pagi_numbers.push(curpage+2);
+    			pagi_numbers.push("...");
+    			pagi_numbers.push(numbers[length-1]);
+    		}	
+    	}
+    	this.$set(this,"pagi_numbers",pagi_numbers);
+    },
+    getlist:function(curpage){
+
+      let vm = this;
+      vm.curpage = curpage;
+      var param = {"client":"browser","pnum":curpage,"psize":this.pagesize};
+      this.postdata("http://localhost/wunzinnDigests/Mylog/getall",param,function(res){
+        d = JSON.parse(res);
+        if(d.success){
+          vm.$set(vm,"items",d.data);
+          vm.init();
+        }
+      })
+    },
+    postdata:function(url,param,callback){
+      $.post(url,param,function(data,status){
+          callback(data);
+       });
+    }
+} 
+});
+
+app.getlist(app.curpage);
+// app.init();
+</script>
